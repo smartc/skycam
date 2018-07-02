@@ -179,7 +179,11 @@ def start_capture(PHASE=NAUTICAL):
 			( "gamma", GAMMA ),
 			( "interval", WAIT_BETWEEN ),
 			( "latitude", LATITUDE ),
-			( "longitude", LONGITUDE ) ] )
+			( "longitude", LONGITUDE ),
+			( "create_timelapse", CREATE_TIMELAPSE),
+			( "upload_server", REMOTE_SERVER),
+			( "upload_path", REMOTE_PATH),
+			( "remote_command", REMOTE_COMMAND) ] )
 	store_data(data, "capture_settings.json", NIGHTDIR)
 
 	return NIGHTDIR
