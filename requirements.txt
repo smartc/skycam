@@ -1,0 +1,17 @@
+atomicwrites==1.1.5
+attrs==18.1.0
+ephem==3.7.6.0
+funcsigs==1.0.2
+more-itertools==4.2.0
+numpy==1.14.5
+pause==0.1.2
+Pillow==5.1.0
+pkg-resources==0.0.0
+pluggy==0.6.0
+py==1.5.3
+pytest==3.6.2
+python-dateutil==2.7.3
+pytz==2018.5
+scandir==1.7
+six==1.11.0
+zwoasi==0.0.22

@@ -1,0 +1,13 @@
+[Unit]
+Description=SkyCam
+Wants=network-online.target
+ 
+[Service]
+Type=simple
+ExecStartPre=/bin/sleep 30
+ExecStart=/absolute/path/to/sky_capture.sh
+User=your_username
+Restart=on-abort
+ 
+[Install]
+WantedBy=default.target
