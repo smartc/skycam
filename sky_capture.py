@@ -216,7 +216,7 @@ def sort_files(target_dir):
 
 	LOGFILE = glob.glob("capture_log_*.log")[0]			# Get the name of the nightly log file so we can append to it
 
-	files = glob.glob(FILE_EXT)							# Get a list of jpg files
+	files = glob.glob('*' + FILE_EXT)							# Get a list of jpg files
 	files.sort(key=lambda x: os.path.getmtime(x))		# Sort them by timestamp
 	filecount = len(files)								# Find out how many files we have
 
