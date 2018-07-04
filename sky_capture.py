@@ -58,6 +58,8 @@ def main():
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
+	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND
+
 	this_folder = os.path.abspath(os.path.dirname(__file__))
 	with open(this_folder + '/' + 'settings.json', 'r') as f:
 		data = json.load(f)
@@ -209,6 +211,7 @@ def sort_files(target_dir):
 	# Sorts files by timestamp.  Oldest to newest.
 	#
 	# Files will be renamed to format '0001.jpg', '0002.jpg', etc.
+	global FILE_EXT
 
 	MIN_PADDING = 4										# Minimum number of characters in file name
 	starting_dir = os.getcwd()							# Make a note of where we started, so we can get back
