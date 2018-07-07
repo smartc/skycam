@@ -23,6 +23,7 @@ CREATE_TIMELAPSE = False
 REMOTE_SERVER = None
 REMOTE_PATH = None
 REMOTE_COMMAND = None
+USE_PUSHOVER = None
 
 # Fixed variables:
 UTC = pytz.timezone('UTC')
@@ -33,10 +34,12 @@ ASTRO = 3
 
 def main():
 	load_settings()
+
 	while True:
 		NIGHTDIR = start_capture()
 		[target_dir, padding] = sort_files(NIGHTDIR)
-
+		night_path = os.path.basename(os.path.normpath(NIGHTDIR))
+		
 		# If no remote server is set, then generate the timelapse on local machine and leave it here
 		if REMOTE_SERVER is None and CREATE_TIMELAPSE:				
 			timelapse = generate_timelapse(target_dir, padding)
@@ -44,21 +47,31 @@ def main():
 		# If remote server is set and we have no remote command, upload all files after generating timelapse (if we want one)
 		elif REMOTE_COMMAND is None:								
 			if CREATE_TIMELAPSE: timelapse = generate_timelapse(target_dir, padding)
-			night_path = os.path.basename(os.path.normpath(NIGHTDIR))
 			os.system("rsync -aq " + NIGHTDIR + "/* " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
 
 		# If remote server is set and we have a remote command, upload to server and generate timelapse on remote machine (if we want one)	
 		else:														
 			os.system("rsync -aq " + NIGHTDIR + "/* " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
 			if CREATE_TIMELAPSE: os.system("ssh " + REMOTE_SERVER + " '" + REMOTE_COMMAND + " " + REMOTE_PATH + "/" + night_path +"'")
-		title = "SkyCam Sequence Complete"
-		message = "Image capture is complete for " + night_path + " at " + datetime.now().strftime("%H:%M %d-%b-%Y")
-		if REMOTE_SERVER: message = message + "\nFiles have been uploaded to:" + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path
-		sendPushoverAlert(title, message)
+		
+		if USE_PUSHOVER:
+			title = "SkyCam Sequence Complete"
+			message = "Image capture is complete for " + night_path + " at " + datetime.now().strftime("%H:%M %d-%b-%Y")
+			if REMOTE_SERVER: message = message + "\nFiles have been uploaded to:" + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path
+			sendPushoverAlert(title, message)
+
+		# Pause for a while before starting another loop.
+		# Workaround for issue with sunrise / sunset calculation in sunpos that causes repeated loops if calculation is run before sunrise
+		next_sunset = sunpos.next_sunset(LATITUDE, LONGITUDE)
+		logdiv("-")
+		logmsg("Run complete. Next sunset is at: " + str_local(next_sunset))
+		logmsg("Next run will set up at: " + str_local(next_sunset - timedelta(minutes=30)))
+		logdiv("-")
+		pause.until(next_sunset - timedelta(minutes=30))
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
-	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND
+	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
 
 	this_folder = os.path.abspath(os.path.dirname(__file__))
 	with open(this_folder + '/' + 'settings.json', 'r') as f:
@@ -78,7 +91,7 @@ def load_settings():
 	REMOTE_SERVER = data['upload_server']
 	REMOTE_PATH = data['upload_path']
 	REMOTE_COMMAND = data['remote_command']
-
+	USE_PUSHOVER = data['use_pushover']
 
 
 def str_utc(time):
@@ -107,7 +120,7 @@ def start_capture(PHASE=NAUTICAL):
 	logmsg("Starting new image run at: " + str_local(datetime.now()))	
 
 	# Declare global variables
-	global WAIT_BETWEEN, EXPOSURE_TIME, GAIN, GAMMA, LATITUDE, LONGITUDE, CAMERA
+	global WAIT_BETWEEN, EXPOSURE_TIME, GAIN, GAMMA, LATITUDE, LONGITUDE, CAMERA, USE_PUSHOVER
 
 	# Define a few key variables
 	[ START_TIME, END_TIME ] = sunpos.twilight_time(PHASE)		# When to start and finish taking images
@@ -153,14 +166,17 @@ def start_capture(PHASE=NAUTICAL):
 	logmsg("Total Duration is  :  " + str(duration_hours) + " hours " + str(duration_minutes) + " minutes", LOGFILE)
 	logdiv("-",LOGFILE)
 
-	title = "Ready For Next Sequence"
-	message = "SkyCam is online and will begin capture at " + START_TIME.strftime("%H:%M %d-%b-%Y")
-	sendPushoverAlert(title, message)
+	if USE_PUSHOVER:
+		title = "Ready For Next Sequence"
+		message = "SkyCam is online and will begin capture at " + START_TIME.strftime("%H:%M %d-%b-%Y")
+		sendPushoverAlert(title, message)
 
 	pause.until(START_TIME)						
-	title = "Starting Image Acquisition"
-	message = "SkyCam is capturing images.\n\nImage capture will finish at " + END_TIME.strftime("%H:%M %d-%b-%Y")
-	sendPushoverAlert(title, message)
+	
+	if USE_PUSHOVER:
+		title = "Starting Image Acquisition"
+		message = "SkyCam is capturing images.\n\nImage capture will finish at " + END_TIME.strftime("%H:%M %d-%b-%Y")
+		sendPushoverAlert(title, message)
 	
 	while datetime.now() < END_TIME:
 		now = datetime.now()
@@ -219,7 +235,7 @@ def sort_files(target_dir):
 
 	LOGFILE = glob.glob("capture_log_*.log")[0]			# Get the name of the nightly log file so we can append to it
 
-	files = glob.glob('*' + FILE_EXT)							# Get a list of jpg files
+	files = glob.glob('*' + FILE_EXT)					# Get a list of image files
 	files.sort(key=lambda x: os.path.getmtime(x))		# Sort them by timestamp
 	filecount = len(files)								# Find out how many files we have
 

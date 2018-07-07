@@ -1,6 +1,7 @@
 import ephem,json
 from math import pi
 from datetime import datetime
+import pytz
 
 # Define twilight angles:
 SUNSET=0
@@ -67,7 +68,7 @@ def twilight_time(twilight=0,lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True
 	# Check whether date provided is TZ aware. If yes and not in UTC, then convert to UTC.
 	try:
 		isAware = (date.tzinfo is not None)
-		isUTC = date.tzinfo == pytz.utc
+		isUTC = date.tzinfo == pytz.timezone('UTC')
 		if isAWare and not isUTC:
 			print "Date provided is not UTC time, converting to UTC."
 			date = date.astimezone(pytz.timezone('UTC'))
@@ -110,3 +111,57 @@ def twilight_time(twilight=0,lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True
 
 	# Finally, return the values but in local time:
 	return [start, end]
+
+def next_sunset(lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True):
+	# Returns twilight start and end time for tonight.
+	# 
+	# Arguments are:
+	#	twilight 	0 - Sunset
+	#			1 - Civil twilight
+	#			2 - Nautical twilight
+	#			3 - Astronomical twilight
+	#	lat		Latitude in degrees, +ve values are North of equator
+	#	lon		Longitude in degrees, +ve values are East of the prime meridian
+	#	date		Today's date - must be TZ aware. If not, we assume UTC.
+	#	clean_seconds	I hate seeing fractional seconds in my results so I'll round off by default.  Set this to False if you want different behaviour.
+
+	# Start by converting coordiantes to radian for calculations
+	lat = lat*pi/180
+	lon = lon*pi/180
+
+	# Check whether date provided is TZ aware. If yes and not in UTC, then convert to UTC.
+	try:
+		isAware = (date.tzinfo is not None)
+		isUTC = date.tzinfo == pytz.timezone('UTC')
+		if isAware and not isUTC:
+			print "Date provided is not UTC time, converting to UTC."
+			date = date.astimezone(pytz.timezone('UTC'))
+		elif not isAware:
+			print "Warning - date provided is not UTC aware.  Calculations will assume UTC."
+	except:
+		pass
+
+	# Set up our observer location and sun object
+	sun = ephem.Sun()
+	o = ephem.Observer()
+	o.lat = lat
+	o.lon = lon
+	o.date = date
+
+	try:
+		setting = o.next_setting(sun)
+	
+		# Convert to local time:
+		setting = ephem.localtime(setting)
+	
+		# Cleanup Seconds so that we don't have fractional results
+		if clean_seconds:
+			setting = datetime(setting.year, setting.month, setting.day, setting.hour, setting.minute, setting.second)
+	
+	except ephem.AlwaysUpError:
+		setting = None
+
+	except:
+		raise
+
+	return setting

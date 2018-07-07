@@ -1,16 +1,18 @@
 {
 	"local_timezone": "America/Edmonton",
-	"image_folder": "<your_local_folder_here>",
+	"image_folder": "/absolute/path/to/images/",
 	"latitude": 0.000,
 	"longitude": 0.000,
 	"exposure": 5,
-	"camera_gain": 200,
+	"camera_gain": 300,
 	"image_gamma": 50,
 	"interval": 0.1,
 	"twilight_phase": 2,
 	"file_type": ".jpg",
 	"create_timelapse": true,
-	"upload_server": "<username@remote_server>",
-	"upload_path": "<absolute_path_to_remote_folder>",
-	"remote_command": "<remote_ffmepg_bash_script>"
+	"upload_server": "you@remote_server",
+	"upload_path": "/absolute/path/to/remote/folder",
+	"remote_command": "/absolute/path/to/ffmpeg_script",
+	"use_pushover": true
 }
+
