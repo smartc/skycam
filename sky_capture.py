@@ -33,6 +33,9 @@ NAUTICAL = 2
 ASTRO = 3
 
 def main():
+	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
+	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+
 	load_settings()
 
 	while True:
@@ -62,12 +65,13 @@ def main():
 
 		# Pause for a while before starting another loop.
 		# Workaround for issue with sunrise / sunset calculation in sunpos that causes repeated loops if calculation is run before sunrise
-		next_sunset = sunpos.next_sunset(LATITUDE, LONGITUDE)
+		next_sunset = LOCALTZ.localize(sunpos.next_sunset(LATITUDE, LONGITUDE))
 		logdiv("-")
 		logmsg("Run complete. Next sunset is at: " + str_local(next_sunset))
 		logmsg("Next run will set up at: " + str_local(next_sunset - timedelta(minutes=30)))
 		logdiv("-")
 		pause.until(next_sunset - timedelta(minutes=30))
+		# pause.hours(4)
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
@@ -123,7 +127,7 @@ def start_capture(PHASE=NAUTICAL):
 	global WAIT_BETWEEN, EXPOSURE_TIME, GAIN, GAMMA, LATITUDE, LONGITUDE, CAMERA, USE_PUSHOVER
 
 	# Define a few key variables
-	[ START_TIME, END_TIME ] = sunpos.twilight_time(PHASE)		# When to start and finish taking images
+	[ START_TIME, END_TIME ] = sunpos.twilight_time(PHASE, LATITUDE, LONGITUDE, datetime.utcnow())		# When to start and finish taking images
 	
 	while START_TIME is None:									# If sun is always up, fallback one twilight phase
 		logmsg("Selected twilight phase does not occur for this location / date.  Falling back to earlier twilight.")
@@ -133,7 +137,7 @@ def start_capture(PHASE=NAUTICAL):
 			logmsg('ERROR: sun always above horizon - cannot set start time.  Exiting')
 			logdiv('*')
 			raise RuntimeError('Error: sun always above horizon - cannot set start time.')
-		[ START_TIME, END_TIME ] = sunpos.twilight_time(PHASE)
+		[ START_TIME, END_TIME ] = sunpos.twilight_time(PHASE, LATITUDE, LONGITUDE, datetime.utcnow())
 	
 	duration = END_TIME - START_TIME
 	duration_hours = duration.seconds // 3600

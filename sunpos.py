@@ -48,7 +48,7 @@ def twilight_phase(lat=LAT, lon=LON):
 		return 4			# "NIGHT"
 
 
-def twilight_time(twilight=0,lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True):
+def twilight_time(twilight=0,lat=LAT,lon=LON,date=datetime.utcnow(),clean_seconds=True):
 	# Returns twilight start and end time for tonight.
 	# 
 	# Arguments are:
@@ -66,16 +66,16 @@ def twilight_time(twilight=0,lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True
 	lon = lon*pi/180
 
 	# Check whether date provided is TZ aware. If yes and not in UTC, then convert to UTC.
-	try:
-		isAware = (date.tzinfo is not None)
-		isUTC = date.tzinfo == pytz.timezone('UTC')
-		if isAWare and not isUTC:
-			print "Date provided is not UTC time, converting to UTC."
-			date = date.astimezone(pytz.timezone('UTC'))
-		elif not isAWare:
-			print "Warning - date provided is not UTC aware.  Calculations will assume UTC."
-	except:
-		pass
+	# try:
+	isAware = (date.tzinfo is not None)
+	isUTC = date.tzinfo == pytz.timezone('UTC')
+	if isAware and not isUTC:
+		print "Date provided is not UTC time, converting to UTC."
+		date = date.astimezone(pytz.timezone('UTC'))
+	elif not isAware:
+		print "Warning - date provided is not UTC aware.  Calculations will assume UTC."
+	# except:
+	# 	pass
 
 	# Set up our observer location and sun object
 	sun = ephem.Sun()
@@ -112,7 +112,7 @@ def twilight_time(twilight=0,lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True
 	# Finally, return the values but in local time:
 	return [start, end]
 
-def next_sunset(lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True):
+def next_sunset(lat=LAT,lon=LON,date=datetime.utcnow(),clean_seconds=True):
 	# Returns twilight start and end time for tonight.
 	# 
 	# Arguments are:
@@ -130,16 +130,16 @@ def next_sunset(lat=LAT,lon=LON,date=ephem.now(),clean_seconds=True):
 	lon = lon*pi/180
 
 	# Check whether date provided is TZ aware. If yes and not in UTC, then convert to UTC.
-	try:
-		isAware = (date.tzinfo is not None)
-		isUTC = date.tzinfo == pytz.timezone('UTC')
-		if isAware and not isUTC:
-			print "Date provided is not UTC time, converting to UTC."
-			date = date.astimezone(pytz.timezone('UTC'))
-		elif not isAware:
-			print "Warning - date provided is not UTC aware.  Calculations will assume UTC."
-	except:
-		pass
+	# try:
+	isAware = date.tzinfo is not None
+	isUTC = date.tzinfo == pytz.timezone('UTC')
+	if isAware and not isUTC:
+		print "Date provided is not UTC time, converting to UTC."
+		date = date.astimezone(pytz.timezone('UTC'))
+	elif not isAware:
+		print "Warning - date provided is not UTC aware.  Calculations will assume UTC."
+	# except:
+	# 	pass
 
 	# Set up our observer location and sun object
 	sun = ephem.Sun()
