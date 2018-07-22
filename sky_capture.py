@@ -5,6 +5,7 @@ import pause, pytz, os, sys, glob, json
 from datetime import datetime, timedelta
 from math import ceil, log10
 from collections import OrderedDict
+from startrailer import star_trails
 
 # Declare some global variables:
 # Variables to be loaded from settings file:
@@ -20,6 +21,7 @@ PHASE = None
 FILE_EXT = None
 CAMERA = None
 CREATE_TIMELAPSE = False
+CREATE_STARTRAILS = False
 REMOTE_SERVER = None
 REMOTE_PATH = None
 REMOTE_COMMAND = None
@@ -57,6 +59,18 @@ def main():
 			os.system("rsync -aq " + NIGHTDIR + "/* " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
 			if CREATE_TIMELAPSE: os.system("ssh " + REMOTE_SERVER + " '" + REMOTE_COMMAND + " " + REMOTE_PATH + "/" + night_path +"'")
 		
+
+		# Generate Star Trail image if desired and sync to remote server:
+		if CREATE_TIMELAPSE:
+			for i in range(padding):
+				file_pattern = file_pattern + "[0-9]"
+			file_pattern = file_pattern + ".jpg"
+			star_trails_file = "star_trails_" + night_path + ".jpg"
+
+			star_trails(NIGHTDIR, star_trails_file, file_pattern)
+			if not REMOTE_SERVER is None:
+				os.system("rsync -aq " + NIGHTDIR + "/" + star_trails_file + " " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
+
 		if USE_PUSHOVER:
 			title = "SkyCam Sequence Complete"
 			message = "Image capture is complete for " + night_path + " at " + datetime.now().strftime("%H:%M %d-%b-%Y")
@@ -71,7 +85,6 @@ def main():
 		logmsg("Next run will set up at: " + str_local(next_sunset - timedelta(minutes=30)))
 		logdiv("-")
 		pause.until(next_sunset - timedelta(minutes=30))
-		# pause.hours(4)
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
@@ -92,6 +105,7 @@ def load_settings():
 	PHASE = data['twilight_phase']
 	FILE_EXT = data['file_type']
 	CREATE_TIMELAPSE = data['create_timelapse']
+	CREATE_STARTRAILS = data['create_startrails']
 	REMOTE_SERVER = data['upload_server']
 	REMOTE_PATH = data['upload_path']
 	REMOTE_COMMAND = data['remote_command']
@@ -164,10 +178,10 @@ def start_capture(PHASE=NAUTICAL):
 	# Wait until start of twilight and then start capturing images:
 	logdiv("-",LOGFILE)
 	logmsg("Exposure = " + str(EXPOSURE_TIME) + " | Gain = " + str(GAIN) + " | Gamma = " + str(GAMMA), LOGFILE)
-	logmsg("Current time is    :  " + str_local(datetime.now()), LOGFILE)
-	logmsg("Waiting until      :  " + str_local(START_TIME), LOGFILE)
-	logmsg("Imaging will end at:  " + str_local(END_TIME), LOGFILE)
-	logmsg("Total Duration is  :  " + str(duration_hours) + " hours " + str(duration_minutes) + " minutes", LOGFILE)
+	logmsg("Current time is     :  " + str_local(datetime.now()), LOGFILE)
+	logmsg("Waiting until       :  " + str_local(START_TIME), LOGFILE)
+	logmsg("Imaging will end at :  " + str_local(END_TIME), LOGFILE)
+	logmsg("Total Duration is   :  " + str(duration_hours) + " hours " + str(duration_minutes) + " minutes", LOGFILE)
 	logdiv("-",LOGFILE)
 
 	if USE_PUSHOVER:
@@ -203,6 +217,7 @@ def start_capture(PHASE=NAUTICAL):
 			( "latitude", LATITUDE ),
 			( "longitude", LONGITUDE ),
 			( "create_timelapse", CREATE_TIMELAPSE),
+			( "create_startrails", CREATE_STARTRAILS),
 			( "upload_server", REMOTE_SERVER),
 			( "upload_path", REMOTE_PATH),
 			( "remote_command", REMOTE_COMMAND) ] )

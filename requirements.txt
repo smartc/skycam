@@ -8,6 +8,7 @@ pause==0.1.2
 Pillow==5.1.0
 pkg-resources==0.0.0
 pluggy==0.6.0
+progressbar==2.5
 py==1.5.3
 pytest==3.6.2
 python-dateutil==2.7.3
