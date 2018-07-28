@@ -36,7 +36,7 @@ ASTRO = 3
 
 def main():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
-	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CREATE_TIMELAPSE, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
 
 	load_settings()
 
@@ -61,7 +61,7 @@ def main():
 		
 
 		# Generate Star Trail image if desired and sync to remote server:
-		if CREATE_TIMELAPSE:
+		if CREATE_STARTRAILS:
 			for i in range(padding):
 				file_pattern = file_pattern + "[0-9]"
 			file_pattern = file_pattern + ".jpg"
@@ -88,7 +88,7 @@ def main():
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
-	global CREATE_TIMELAPSE, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CREATE_TIMELAPSE, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
 
 	this_folder = os.path.abspath(os.path.dirname(__file__))
 	with open(this_folder + '/' + 'settings.json', 'r') as f:
@@ -173,7 +173,7 @@ def start_capture(PHASE=NAUTICAL):
 	# Initialize the camera:
 	if CAMERA is None:
 		CAMERA = skycam.initialize()
-		skycam.set_controls(GAIN, GAMMA)
+	skycam.set_controls(GAIN, GAMMA)
 
 	# Wait until start of twilight and then start capturing images:
 	logdiv("-",LOGFILE)
