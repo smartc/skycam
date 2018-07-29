@@ -21,6 +21,7 @@ PHASE = None
 FILE_EXT = None
 CAMERA = None
 CREATE_TIMELAPSE = False
+TIMELAPSE_FPS = 25
 CREATE_STARTRAILS = False
 REMOTE_SERVER = None
 REMOTE_PATH = None
@@ -36,7 +37,7 @@ ASTRO = 3
 
 def main():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
-	global CREATE_TIMELAPSE, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CREATE_TIMELAPSE, TIMELAPSE_FPS,CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
 
 	load_settings()
 
@@ -47,27 +48,29 @@ def main():
 		
 		# If no remote server is set, then generate the timelapse on local machine and leave it here
 		if REMOTE_SERVER is None and CREATE_TIMELAPSE:				
-			timelapse = generate_timelapse(target_dir, padding)
+			timelapse = generate_timelapse(target_dir, TIMELAPSE_FPS)
 
 		# If remote server is set and we have no remote command, upload all files after generating timelapse (if we want one)
 		elif REMOTE_COMMAND is None:								
-			if CREATE_TIMELAPSE: timelapse = generate_timelapse(target_dir, padding)
+			if CREATE_TIMELAPSE: timelapse = generate_timelapse(target_dir, TIMELAPSE_FPS)
 			os.system("rsync -aq " + NIGHTDIR + "/* " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
 
 		# If remote server is set and we have a remote command, upload to server and generate timelapse on remote machine (if we want one)	
 		else:														
 			os.system("rsync -aq " + NIGHTDIR + "/* " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
-			if CREATE_TIMELAPSE: os.system("ssh " + REMOTE_SERVER + " '" + REMOTE_COMMAND + " " + REMOTE_PATH + "/" + night_path +"'")
+			command = "ssh " + REMOTE_SERVER + " '" + REMOTE_COMMAND + " " + REMOTE_PATH + "/" + night_path +"' " + TIMELAPSE_FPS
+			if CREATE_TIMELAPSE: os.system(command)
 		
 
 		# Generate Star Trail image if desired and sync to remote server:
+		file_pattern = ""
 		if CREATE_STARTRAILS:
 			for i in range(padding):
 				file_pattern = file_pattern + "[0-9]"
 			file_pattern = file_pattern + ".jpg"
 			star_trails_file = "star_trails_" + night_path + ".jpg"
 
-			star_trails(NIGHTDIR, star_trails_file, file_pattern)
+			star_trails(NIGHTDIR, star_trails_file, "jpg", file_pattern)
 			if not REMOTE_SERVER is None:
 				os.system("rsync -aq " + NIGHTDIR + "/" + star_trails_file + " " + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path)
 
@@ -88,7 +91,7 @@ def main():
 
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
-	global CREATE_TIMELAPSE, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CREATE_TIMELAPSE, TIMELAPSE_FPS, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
 
 	this_folder = os.path.abspath(os.path.dirname(__file__))
 	with open(this_folder + '/' + 'settings.json', 'r') as f:
@@ -105,6 +108,7 @@ def load_settings():
 	PHASE = data['twilight_phase']
 	FILE_EXT = data['file_type']
 	CREATE_TIMELAPSE = data['create_timelapse']
+	TIMELAPSE_FPS = data['timelapse_fps']
 	CREATE_STARTRAILS = data['create_startrails']
 	REMOTE_SERVER = data['upload_server']
 	REMOTE_PATH = data['upload_path']
@@ -282,7 +286,7 @@ def sort_files(target_dir):
 	
 	return target_dir, padding
 
-def generate_timelapse(target_dir, rate=25, extension=FILE_EXT ):
+def generate_timelapse(target_dir, rate=TIMELAPSE_FPS, extension=FILE_EXT ):
 
 	starting_dir = os.getcwd()
 	os.chdir(target_dir)								# Switch to the target directory

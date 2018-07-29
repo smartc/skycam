@@ -15,8 +15,8 @@ def star_trails(tgtDir=None, output_name=None, imageType="jpg", prefix=""):
 
 	if output_name is None:
 		output_name = "star_trails.jpg"
-	elif not output_name.lower().endswith(".jpg", ".jpeg"):
-		output_name = os.path.splittext(output_name)[0] + ".jpg"
+	elif not output_name.lower().endswith(".jpg"):
+		output_name = os.path.splitext(output_name)[0] + ".jpg"
 
 	images = glob(filePattern)
 	images.sort()
