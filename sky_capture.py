@@ -1,5 +1,6 @@
 import sunpos
 import skycam
+from clean_folders import *
 from pushover import sendPushoverAlert
 import pause, pytz, os, sys, glob, json
 from datetime import datetime, timedelta
@@ -27,6 +28,8 @@ REMOTE_SERVER = None
 REMOTE_PATH = None
 REMOTE_COMMAND = None
 USE_PUSHOVER = None
+CLEAN_UP = True
+DAYS_TO_KEEP = 3
 
 # Fixed variables:
 UTC = pytz.timezone('UTC')
@@ -38,6 +41,7 @@ ASTRO = 3
 def main():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
 	global CREATE_TIMELAPSE, TIMELAPSE_FPS,CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CLEAN_UP, DAYS_TO_KEEP
 
 	load_settings()
 
@@ -80,6 +84,14 @@ def main():
 			if REMOTE_SERVER: message = message + "\nFiles have been uploaded to:" + REMOTE_SERVER + ":" + REMOTE_PATH + "/" + night_path
 			sendPushoverAlert(title, message)
 
+
+		# Purge subfolders older than specified numbers of days:
+		if CLEAN_UP:
+			logdiv("=")
+			logmsg("Purging folders older than " + str(DAYS_TO_KEEP) + " days.")
+			purgeFolders(BASEDIR, DAYS_TO_KEEP)
+
+
 		# Pause for a while before starting another loop.
 		# Workaround for issue with sunrise / sunset calculation in sunpos that causes repeated loops if calculation is run before sunrise
 		next_sunset = LOCALTZ.localize(sunpos.next_sunset(LATITUDE, LONGITUDE))
@@ -92,6 +104,7 @@ def main():
 def load_settings():
 	global LOCALTZ, BASEDIR, LATITUDE, LONGITUDE, EXPOSURE_TIME, GAIN, GAMMA, WAIT_BETWEEN, PHASE, FILE_EXT
 	global CREATE_TIMELAPSE, TIMELAPSE_FPS, CREATE_STARTRAILS, REMOTE_SERVER, REMOTE_PATH, REMOTE_COMMAND, USE_PUSHOVER
+	global CLEAN_UP, DAYS_TO_KEEP
 
 	this_folder = os.path.abspath(os.path.dirname(__file__))
 	with open(this_folder + '/' + 'settings.json', 'r') as f:
@@ -114,6 +127,8 @@ def load_settings():
 	REMOTE_PATH = data['upload_path']
 	REMOTE_COMMAND = data['remote_command']
 	USE_PUSHOVER = data['use_pushover']
+	CLEAN_UP = data['clean_up_folders']
+	DAYS_TO_KEEP = data['days_to_keep']
 
 
 def str_utc(time):
@@ -224,7 +239,9 @@ def start_capture(PHASE=NAUTICAL):
 			( "create_startrails", CREATE_STARTRAILS),
 			( "upload_server", REMOTE_SERVER),
 			( "upload_path", REMOTE_PATH),
-			( "remote_command", REMOTE_COMMAND) ] )
+			( "remote_command", REMOTE_COMMAND),
+			( "clean_up_folders", CLEAN_UP),
+			( "days_to_keep", DAYS_TO_KEEP)  ],)
 	store_data(data, "capture_settings.json", NIGHTDIR)
 
 	return NIGHTDIR
